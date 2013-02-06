@@ -1,4 +1,5 @@
 import random
+import sys
 
 class DraftLottery:
     teams = {}
@@ -47,3 +48,24 @@ class DraftLottery:
         print "Pick " + str(num_pick)  +" is: " + selected_team + ", with " + str(selected_team_num_balls) + "/" + str(len(self.balls)) + " balls"
         print "Removing " + selected_team + "'s balls"
         self.balls = filter(lambda a: a != selected_team, self.balls)
+
+if __name__ == "__main__":
+    args = sys.argv
+    args.pop(0)
+    draft = DraftLottery()
+    if len(args) == 1:
+        draftfile = open(args[0], 'r')
+        while True:
+            line = draftfile.readline()
+            if line == '':
+                break
+            else:
+                parameters = line.strip().split()
+                if len(parameters) == 2:
+                    #name, number of balls
+                    draft.addteam(name=parameters[0], num_balls=int(parameters[1]))
+                elif len(parameters) == 3:
+                    #name, email, number of balls
+                    pass
+        draft.seedlottery()
+        draft.runlottery()
