@@ -1,5 +1,9 @@
-import random
-import sys
+import random, smtplib, sys
+
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
+from email_settings import MANDRILL_USERNAME, MANDRILL_PASSWORD, FROM_EMAIL
 
 class DraftLottery:
     teams = {}
@@ -49,10 +53,31 @@ class DraftLottery:
         print "Removing " + selected_team + "'s balls"
         self.balls = filter(lambda a: a != selected_team, self.balls)
 
+    def email(self, recipients):
+        #from http://help.mandrill.com/entries/21746308-Sending-via-SMTP-in-various-programming-languages
+        html = ""
+        for i, team in enumerate(self.order):
+            html += "<div>Pick " + str(i+1) + ": " + team + "</div>"
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = "Draft lottery results"
+        msg['From'] = FROM_EMAIL
+        body = MIMEText(html, 'html')
+        username = MANDRILL_USERNAME
+        password = MANDRILL_PASSWORD
+        msg.attach(body)
+        s = smtplib.SMTP('smtp.mandrillapp.com', 587)
+        s.login(username, password)
+
+        for recipient in recipients:
+            msg['To'] = str(recipient)
+            s.sendmail(msg['From'], msg['To'], msg.as_string())
+        s.quit()
+
 if __name__ == "__main__":
     args = sys.argv
     args.pop(0)
     draft = DraftLottery()
+    recipients = []
     if len(args) == 1:
         draftfile = open(args[0], 'r')
         while True:
@@ -66,6 +91,9 @@ if __name__ == "__main__":
                     draft.addteam(name=parameters[0], num_balls=int(parameters[1]))
                 elif len(parameters) == 3:
                     #name, email, number of balls
-                    pass
+                    draft.addteam(name=parameters[0], num_balls=int(parameters[2]))
+                    recipients.append(parameters[1])
         draft.seedlottery()
         draft.runlottery()
+        if recipients:
+            draft.email(recipients=recipients)
